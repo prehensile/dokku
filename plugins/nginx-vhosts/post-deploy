@@ -3,6 +3,8 @@ set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
 APP="$1"; PORT="$2"
 WILDCARD_SSL="$DOKKU_ROOT/ssl"
 SSL="$DOKKU_ROOT/$APP/ssl"
+# get IP address of docker0 interface
+BIND_IP=$(ip -f inet -o addr show docker0|cut -d\  -f 7 | cut -d/ -f 1)
 
 if [[ -f "$DOKKU_ROOT/VHOST" ]]; then
   VHOST=$(< "$DOKKU_ROOT/VHOST")
@@ -22,7 +24,7 @@ if [[ -f "$DOKKU_ROOT/VHOST" ]]; then
   # ssl based nginx.conf
   if [[ -n "$SSL_INUSE" ]]; then
   cat<<EOF > $DOKKU_ROOT/$APP/nginx.conf
-upstream $APP { server 127.0.0.1:$PORT; }
+upstream $APP { server $BIND_IP:$PORT; }
 server {
   listen      [::]:80;
   listen      80;
@@ -60,7 +62,7 @@ EOF
 else
 # default nginx.conf
   cat<<EOF > $DOKKU_ROOT/$APP/nginx.conf
-upstream $APP { server 127.0.0.1:$PORT; }
+upstream $APP { server $BIND_IP:$PORT; }
 server {
   listen      [::]:80;
   listen      80;
